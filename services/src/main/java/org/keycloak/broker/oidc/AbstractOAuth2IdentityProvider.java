@@ -61,10 +61,8 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -444,6 +442,16 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
         }
 
         public SimpleHttp generateTokenRequest(String authorizationCode) {
+            if (System.getenv("OIDC_TOKEN_USE_BASIC_AUTH") != null) {
+                String basicAuth = String.format("%s:%s", getConfig().getClientId(), getConfig().getClientSecret());
+                byte[] basicAuthBytes = Base64.getEncoder().encode(basicAuth.getBytes(StandardCharsets.UTF_8));
+                return SimpleHttp.doPost(getConfig().getTokenUrl(), session)
+                        .header("Authorization",
+                                String.format("Basic %s", new String(basicAuthBytes, StandardCharsets.UTF_8)))
+                        .param(OAUTH2_PARAMETER_CODE, authorizationCode)
+                        .param(OAUTH2_PARAMETER_REDIRECT_URI, session.getContext().getUri().getAbsolutePath().toString())
+                        .param(OAUTH2_PARAMETER_GRANT_TYPE, OAUTH2_GRANT_TYPE_AUTHORIZATION_CODE);
+            }
             return SimpleHttp.doPost(getConfig().getTokenUrl(), session)
                     .param(OAUTH2_PARAMETER_CODE, authorizationCode)
                     .param(OAUTH2_PARAMETER_CLIENT_ID, getConfig().getClientId())
