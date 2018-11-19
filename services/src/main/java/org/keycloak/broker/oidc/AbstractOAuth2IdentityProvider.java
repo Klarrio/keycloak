@@ -442,20 +442,15 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
         }
 
         public SimpleHttp generateTokenRequest(String authorizationCode) {
-            if (System.getenv("OIDC_TOKEN_USE_BASIC_AUTH") != null) {
-                String basicAuth = String.format("%s:%s", getConfig().getClientId(), getConfig().getClientSecret());
-                byte[] basicAuthBytes = Base64.getEncoder().encode(basicAuth.getBytes(StandardCharsets.UTF_8));
-                return SimpleHttp.doPost(getConfig().getTokenUrl(), session)
-                        .header("Authorization",
-                                String.format("Basic %s", new String(basicAuthBytes, StandardCharsets.UTF_8)))
-                        .param(OAUTH2_PARAMETER_CODE, authorizationCode)
-                        .param(OAUTH2_PARAMETER_REDIRECT_URI, session.getContext().getUri().getAbsolutePath().toString())
-                        .param(OAUTH2_PARAMETER_GRANT_TYPE, OAUTH2_GRANT_TYPE_AUTHORIZATION_CODE);
-            }
+            // This is an imtermediate workaround for until the correct pull request
+            // gets merged. The PR in question:
+            //
+            String basicAuth = String.format("%s:%s", getConfig().getClientId(), getConfig().getClientSecret());
+            byte[] basicAuthBytes = Base64.getEncoder().encode(basicAuth.getBytes(StandardCharsets.UTF_8));
             return SimpleHttp.doPost(getConfig().getTokenUrl(), session)
+                    .header("Authorization",
+                            String.format("Basic %s", new String(basicAuthBytes, StandardCharsets.UTF_8)))
                     .param(OAUTH2_PARAMETER_CODE, authorizationCode)
-                    .param(OAUTH2_PARAMETER_CLIENT_ID, getConfig().getClientId())
-                    .param(OAUTH2_PARAMETER_CLIENT_SECRET, getConfig().getClientSecret())
                     .param(OAUTH2_PARAMETER_REDIRECT_URI, session.getContext().getUri().getAbsolutePath().toString())
                     .param(OAUTH2_PARAMETER_GRANT_TYPE, OAUTH2_GRANT_TYPE_AUTHORIZATION_CODE);
         }
